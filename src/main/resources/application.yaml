@@ -12,7 +12,7 @@ mongodb:
   uri: mongodb://localhost:27017/iot-riff
   database: iot-riff
 mqtt:
-  host: 0.0.0.0
+  host: localhost
   port: 1883
   password: password
 logger:
