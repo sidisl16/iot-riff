@@ -103,6 +103,11 @@ To use IoT-Riff with MCP-compatible clients (like Claude Desktop), add the follo
 ```
 
 
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+
 ---
 
 > 🚀 **IoT-Riff** was brought to life by **Siddharth**, fueled by the intelligent companionship and coding prowess of **Google Antigravity**. 🌌
