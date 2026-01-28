@@ -19,23 +19,6 @@ This platform is specifically engineered to be consumed by AI agents (like Claud
 - **MCP Integration**: Native support for the Model Context Protocol, allowing AI agents to interact with the platform.
 - **MQTT Listener**: Built-in high-performance MQTT broker integration using Netty.
 
-## 🔌 MCP Connection Configuration
-
-To use IoT-Riff with MCP-compatible clients (like Claude Desktop), add the following to your configuration file (e.g., `~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
-
-```json
-{
-  "mcpServers": {
-    "iot-riff": {
-      "command": "java",
-      "args": [
-        "-jar",
-        "/absolute/path/to/target/iot-riff-0.1.jar"
-      ]
-    }
-  }
-}
-```
 
 ## 🏗️ Architecture
 
@@ -100,6 +83,25 @@ IoT-Riff exposes several tools for AI agents via MCP:
 | `listDevices` | List registered devices with filters. |
 | `searchData` | Query historical telemetry data. |
 | `deleteDevice` | Remove a device from the system. |
+
+## 🔌 MCP Connection Configuration
+
+To use IoT-Riff with MCP-compatible clients (like Claude Desktop), add the following to your configuration file (e.g., `~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+
+```json
+{
+  "mcpServers": {
+    "iot-riff": {
+      "command": "java",
+      "args": [
+        "-jar",
+        "/absolute/path/to/target/iot-riff-0.1.jar"
+      ]
+    }
+  }
+}
+```
+
 
 ---
 
