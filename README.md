@@ -39,6 +39,8 @@ To use IoT-Riff with MCP-compatible clients (like Claude Desktop), add the follo
 
 ## 🏗️ Architecture
 
+![IoT Workflow](iot_workflow.gif)
+
 ```mermaid
 graph TD
     Device[IoT Device] -- MQTT --> Listener[MQTT Listener]
