@@ -4,7 +4,7 @@ IoT-Riff is a specialized **Model Context Protocol (MCP) Server** designed to pr
 
 ## 🤖 Agentic IoT Interface
 
-This platform is specifically engineered to be consumed by AI agents (like Claude, Gemini, or custom GPTs) via the Model Context Protocol. It allows agents to:
+This platform is specifically engineered to be consumed by AI agents (like Claude Desktop ) via the Model Context Protocol. It allows agents to:
 - **Understand** device capabilities through structured models and schemas.
 - **Provision** and configure new devices autonomously.
 - **Analyze** real-time and historical telemetry data.
@@ -92,10 +92,10 @@ To use IoT-Riff with MCP-compatible clients (like Claude Desktop), add the follo
 {
   "mcpServers": {
     "iot-riff": {
-      "command": "java",
+      "command": "npx",
       "args": [
-        "-jar",
-        "/absolute/path/to/target/iot-riff-0.1.jar"
+        "mcp-remote",
+        "http://localhost:8080/mcp"
       ]
     }
   }
