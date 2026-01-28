@@ -1,0 +1,30 @@
+micronaut:
+  application:
+    name: iot-riff
+  mcp:
+    server:
+      transport: HTTP
+endpoints:
+  all:
+    enabled: true
+    sensitive: false
+mongodb:
+  uri: mongodb://localhost:27017/iot-riff
+  database: iot-riff
+mqtt:
+  host: 0.0.0.0
+  port: 1883
+  password: password
+logger:
+  levels:
+    io.micronaut.http.server: DEBUG
+    io.micronaut.mcp: DEBUG
+kafka:
+  bootstrap:
+    servers: localhost:9092
+  consumers:
+    iot-data-processor:
+      threads: 1
+      auto:
+        offset:
+          reset: latest
