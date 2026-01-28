@@ -52,7 +52,6 @@ graph TD
 - **Maven 3.9+**
 - **MongoDB** (Running on `localhost:27017` by default)
 - **Apache Kafka** (Running on `localhost:9092` by default)
-- **MQTT Broker** (Optional, if using external)
 
 ### Build & Run
 
