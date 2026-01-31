@@ -14,3 +14,13 @@ out/
 .classpath
 .factorypath
 .vscode/
+
+# Local Infrastructure Tools
+vault_*/
+vault.log
+kafka_*/
+mongodb-*/
+mongodb-data/
+mongo.log
+*.zip
+*.tgz

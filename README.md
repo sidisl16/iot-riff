@@ -79,17 +79,14 @@ graph TB
 - **Validation**: NetworkNT JSON Schema Validator
 - **Integration**: Model Context Protocol (MCP)
 
-## 🚦 Getting Started
+## 🚦 Getting Started (macOS)
 
 ### Prerequisites
-
 - **Java 21** or higher
 - **Maven 3.9+**
-- **MongoDB** (Running on `localhost:27017` by default)
-- **Apache Kafka** (Running on `localhost:9092` by default)
-- **HashiCorp Vault** (Running on `http://localhost:8200` by default)
 
-### Build & Run
+### Quick Start
+The project includes a `run.sh` script that automates the entire setup process, including downloading and starting Infrastructure tools (Vault, Kafka, MongoDB).
 
 1. **Clone the repository**:
    ```bash
@@ -97,16 +94,17 @@ graph TB
    cd iot-riff
    ```
 
-2. **Build the project**:
+2. **Run the Application**:
    ```bash
-   ./mvnw clean install
+   ./run.sh
    ```
+   
+   This script will:
+   - **Setup Infrastructure**: Download and start Vault, Kafka (KRaft), and MongoDB if they aren't running.
+   - **Configure Environment**: Auto-configure shell environment variables (Vault Token, Paths) in your `~/.zshrc`.
+   - **Build & Run**: Build the project and start the generic IoT-Riff server.
 
-3. **Run the application**:
-   ```bash
-   export VAULT_TOKEN=<your-vault-token>
-   java -jar target/iot-riff-0.1.jar
-   ```
+   > **Note**: Press `Ctrl+C` to gracefully shut down the application and all background services.
 
 ## 🤖 MCP Tools
 
