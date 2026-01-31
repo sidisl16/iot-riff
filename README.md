@@ -26,16 +26,44 @@ This platform is specifically engineered to be consumed by AI agents (like Claud
 ![IoT Workflow](iot_workflow.gif)
 
 ```mermaid
-graph TD
-    Device[IoT Device] -- MQTT --> Listener[MQTT Listener]
-    Listener -- Authenticate --> Vault[HashiCorp Vault]
-    Listener -- Kafka Producer --> Kafka[Apache Kafka]
-    Kafka -- Consumer --> Service[IoT Data Service]
-    Service -- DAL --> MongoDB[(MongoDB)]
-    Service -- Provision Secrets --> Vault
-    
-    Tool[MCP Client/Agent] -- JSON-RPC --> MCP[MCP Tools]
-    MCP -- Invokes --> ServiceLayer[Service Layer]
+graph TB
+    subgraph Edge ["🌐 Edge Layer"]
+        Device["📱 IoT Device"]
+    end
+
+    subgraph Interface ["🤖 Agent Interface"]
+        MCPClient["💻 MCP Client / Agent"]
+        MCPTools["🛠️ MCP Tools"]
+    end
+
+    subgraph Ingestion ["🚀 Ingestion & Security"]
+        Listener["🛰️ MQTT Listener"]
+        Vault["🔐 HashiCorp Vault"]
+    end
+
+    subgraph Backend ["⚙️ Backend & Persistence"]
+        Kafka["📉 Apache Kafka"]
+        ServiceLayer["🏗️ Service Layer"]
+        MongoDB["💾 MongoDB"]
+    end
+
+    %% Data Flow
+    Device -- "MQTT" --> Listener
+    Listener -- "Auth & Credentials" --> Vault
+    Listener -- "Produce" --> Kafka
+    Kafka -- "Consume" --> ServiceLayer
+    ServiceLayer -- "Sync" --> MongoDB
+    ServiceLayer -- "Secrets" --> Vault
+
+    %% Control Flow
+    MCPClient -- "JSON-RPC" --> MCPTools
+    MCPTools -- "Invoke" --> ServiceLayer
+
+    %% Styling
+    style Edge fill:#f9f,stroke:#333,stroke-width:2px
+    style Interface fill:#bbf,stroke:#333,stroke-width:2px
+    style Ingestion fill:#dfd,stroke:#333,stroke-width:2px
+    style Backend fill:#ffd,stroke:#333,stroke-width:2px
 ```
 
 ## 🛠️ Tech Stack
