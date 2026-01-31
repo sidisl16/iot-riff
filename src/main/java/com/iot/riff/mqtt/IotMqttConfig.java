@@ -7,15 +7,15 @@ import jakarta.inject.Singleton;
 public class IotMqttConfig {
     private final String host;
     private final int port;
-    private final String password;
+    private final String secretPath;
 
     public IotMqttConfig(@Property(name = "mqtt.host") String host,
             @Property(name = "mqtt.port") int port,
-            @Property(name = "mqtt.password") String password) {
+            @Property(name = "mqtt.secretPath") String secretPath) {
 
         this.host = host;
         this.port = port;
-        this.password = password;
+        this.secretPath = secretPath;
     }
 
     public String getHost() {
@@ -26,7 +26,7 @@ public class IotMqttConfig {
         return port;
     }
 
-    public String getPassword() {
-        return password;
+    public String getSecretPath() {
+        return secretPath;
     }
 }

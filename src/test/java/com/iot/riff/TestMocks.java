@@ -26,8 +26,8 @@ public class TestMocks {
     @Singleton
     @Replaces(IotMqttListener.class)
     public IotMqttListener iotMqttListener() {
-        com.iot.riff.mqtt.IotMqttConfig config = new com.iot.riff.mqtt.IotMqttConfig("localhost", 1883, "password");
-        return new IotMqttListener(config, null, null) {
+        com.iot.riff.mqtt.IotMqttConfig config = new com.iot.riff.mqtt.IotMqttConfig("localhost", 1883, "secretPath");
+        return new IotMqttListener(config, null, null, null) {
             @Override
             public void onApplicationEvent(io.micronaut.context.event.StartupEvent event) {
                 // Do nothing

@@ -14,6 +14,7 @@ import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.CharsetUtil;
 import com.iot.riff.service.dal.mongo.IotDeviceDal;
 import com.iot.riff.service.exception.IotException;
+import com.iot.riff.vault.IotVaultService;
 
 import io.micronaut.context.event.StartupEvent;
 
@@ -27,16 +28,18 @@ public class IotMqttListener implements io.micronaut.context.event.ApplicationEv
 
     private final int port;
     private final IotDeviceDal iotDeviceDal;
+    private final IotVaultService iotVaultService;
     private final IotMqttMessageProcessor mqttMessageProcessor;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
 
     public IotMqttListener(IotMqttConfig config, IotDeviceDal iotDeviceDal,
-            IotMqttMessageProcessor mqttMessageProcessor) {
+            IotMqttMessageProcessor mqttMessageProcessor, IotVaultService iotVaultService) {
         this.port = config.getPort();
         this.iotDeviceDal = iotDeviceDal;
         this.mqttMessageProcessor = mqttMessageProcessor;
+        this.iotVaultService = iotVaultService;
     }
 
     @Override
@@ -82,7 +85,8 @@ public class IotMqttListener implements io.micronaut.context.event.ApplicationEv
                             pipeline.addLast("encoder", MqttEncoder.INSTANCE);
 
                             // Add custom MQTT message handler
-                            pipeline.addLast("handler", new MqttMessageHandler(iotDeviceDal, mqttMessageProcessor));
+                            pipeline.addLast("handler",
+                                    new MqttMessageHandler(iotDeviceDal, mqttMessageProcessor, iotVaultService));
                         }
                     })
                     .option(ChannelOption.SO_BACKLOG, 128)
@@ -102,11 +106,14 @@ public class IotMqttListener implements io.micronaut.context.event.ApplicationEv
 
         private final IotDeviceDal iotDeviceDal;
         private final IotMqttMessageProcessor mqttMessageProcessor;
+        private final IotVaultService iotVaultService;
         private String deviceId;
 
-        public MqttMessageHandler(IotDeviceDal iotDeviceDal, IotMqttMessageProcessor mqttMessageProcessor) {
+        public MqttMessageHandler(IotDeviceDal iotDeviceDal, IotMqttMessageProcessor mqttMessageProcessor,
+                IotVaultService iotVaultService) {
             this.iotDeviceDal = iotDeviceDal;
             this.mqttMessageProcessor = mqttMessageProcessor;
+            this.iotVaultService = iotVaultService;
         }
 
         @Override
@@ -151,10 +158,22 @@ public class IotMqttListener implements io.micronaut.context.event.ApplicationEv
             String username = payload.userName();
             byte[] passwordBytes = payload.passwordInBytes();
             String password = passwordBytes != null ? new String(passwordBytes, CharsetUtil.UTF_8) : null;
+            this.deviceId = username;
+            boolean authenticated = false;
+            if (username != null && password != null) {
+                try {
+                    var iotDevice = iotDeviceDal.get(username);
+                    String secretFromVault = iotVaultService
+                            .readSecret(iotDevice.mqttConnectionDetails().secretPath());
+                    if (secretFromVault != null && secretFromVault.equals(password)) {
+                        authenticated = true;
+                    }
+                } catch (Exception e) {
+                    log.error("Authentication failed for client: {} due to error", clientId, e);
+                }
+            }
 
-            if (username != null && password != null
-                    && iotDeviceDal.findByCredentials(username, password).isPresent()) {
-                this.deviceId = username;
+            if (authenticated) {
                 log.info("Client authenticated: {}, DeviceId: {}", clientId, deviceId);
                 // Send CONNACK
                 MqttFixedHeader connAckFixedHeader = new MqttFixedHeader(

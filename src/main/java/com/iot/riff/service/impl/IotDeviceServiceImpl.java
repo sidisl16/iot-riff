@@ -22,6 +22,7 @@ import com.iot.riff.service.domain.IotDevice;
 import com.iot.riff.service.domain.IotDeviceModelId;
 import com.iot.riff.service.domain.MqttConnectionDetails;
 
+import com.iot.riff.vault.IotVaultService;
 import java.util.Set;
 
 import jakarta.inject.Singleton;
@@ -36,15 +37,17 @@ public class IotDeviceServiceImpl implements IotDeviceService {
     private final IotJsonSchemaValidator jsonSchemaValidator;
     private final JsonMapper objectMapper;
     private final IotMqttConfig iotMqttConfig;
+    private final IotVaultService iotVaultService;
 
     public IotDeviceServiceImpl(IotDeviceDal iotDeviceDal, IotDeviceModelDal iotDeviceModelDal,
             IotJsonSchemaValidator jsonSchemaValidator, JsonMapper objectMapper,
-            IotMqttConfig iotMqttConfig) {
+            IotMqttConfig iotMqttConfig, IotVaultService iotVaultService) {
         this.iotDeviceDal = iotDeviceDal;
         this.iotDeviceModelDal = iotDeviceModelDal;
         this.jsonSchemaValidator = jsonSchemaValidator;
         this.objectMapper = objectMapper;
         this.iotMqttConfig = iotMqttConfig;
+        this.iotVaultService = iotVaultService;
     }
 
     @Override
@@ -70,27 +73,43 @@ public class IotDeviceServiceImpl implements IotDeviceService {
             }
         }
 
-        // TODO: Password should be generated, hashicorp vault
-        var mqttConnectionDetails = new MqttConnectionDetails(iotMqttConfig.getHost(),
-                iotMqttConfig.getPort(),
-                getTopic(),
-                null, // Consider Id as username when generated
-                iotMqttConfig.getPassword());
-
         var savedDevice = iotDeviceDal.save(new IotDevice(null,
                 new IotDeviceModelId(request.iotDeviceModelId()),
                 request.name(),
                 request.description(),
-                mqttConnectionDetails,
+                null,
                 request.metadata(),
                 DeviceStatus.ACTIVE,
                 java.time.Instant.now()));
 
-        return new IotDeviceCreateResponse(request.requestId(), savedDevice);
+        try {
+            String secretPath = iotVaultService.generateAndStoreSecretPath(savedDevice.id().id());
+            var mqttConnectionDetails = getMqttConnectionDetails(savedDevice, secretPath);
+            var updatedDevice = new IotDevice(savedDevice.id(),
+                    savedDevice.iotDeviceModelId(),
+                    savedDevice.name(),
+                    savedDevice.description(),
+                    mqttConnectionDetails,
+                    savedDevice.metadata(),
+                    savedDevice.status(),
+                    savedDevice.createdAt());
+
+            iotDeviceDal.update(updatedDevice);
+            return new IotDeviceCreateResponse(request.requestId(), updatedDevice);
+        } catch (Exception e) {
+            log.error("Error securing device with Vault", e);
+            // Rollback
+            iotDeviceDal.delete(savedDevice.id().id());
+            throw new IotException("Error during device creation: " + e.getMessage(), e);
+        }
     }
 
-    private String getTopic() {
-        return "iot/any";
+    private MqttConnectionDetails getMqttConnectionDetails(IotDevice iotDevice, String secretPath) {
+        return new MqttConnectionDetails(iotMqttConfig.getHost(),
+                iotMqttConfig.getPort(),
+                "iot/any",
+                iotDevice.id().id(),
+                secretPath);
     }
 
     @Override

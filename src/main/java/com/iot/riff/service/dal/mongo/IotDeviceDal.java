@@ -30,7 +30,7 @@ public class IotDeviceDal extends BaseMongoOperation<IotDevice> {
     private static final String FIELD_MQTT_PORT = "port";
     private static final String FIELD_MQTT_TOPIC = "topic";
     private static final String FIELD_MQTT_USERNAME = "username";
-    private static final String FIELD_MQTT_PASSWORD = "password";
+    private static final String FIELD_MQTT_SECRET_PATH = "secretPath";
 
     public IotDeviceDal(@Property(name = "mongodb.database") String databaseName) {
         this.databaseName = databaseName;
@@ -65,8 +65,8 @@ public class IotDeviceDal extends BaseMongoOperation<IotDevice> {
                     mqttDoc.getString(FIELD_MQTT_HOST),
                     mqttDoc.getInteger(FIELD_MQTT_PORT),
                     mqttDoc.getString(FIELD_MQTT_TOPIC),
-                    doc.get(FIELD_ID).toString(),
-                    null);
+                    mqttDoc.getString(FIELD_MQTT_USERNAME),
+                    mqttDoc.getString(FIELD_MQTT_SECRET_PATH));
         }
 
         String statusStr = doc.getString(FIELD_STATUS);
@@ -90,10 +90,10 @@ public class IotDeviceDal extends BaseMongoOperation<IotDevice> {
         return count(com.mongodb.client.model.Filters.eq(FIELD_IOT_DEVICE_MODEL_ID, modelId)) > 0;
     }
 
-    public java.util.Optional<IotDevice> findByCredentials(String username, String password) {
+    public java.util.Optional<IotDevice> findByCredentials(String username, String secretPath) {
         org.bson.conversions.Bson filter = com.mongodb.client.model.Filters.and(
                 com.mongodb.client.model.Filters.eq(FIELD_ID, parseId(username)),
-                com.mongodb.client.model.Filters.eq(FIELD_MQTT + "." + FIELD_MQTT_PASSWORD, password));
+                com.mongodb.client.model.Filters.eq(FIELD_MQTT + "." + FIELD_MQTT_SECRET_PATH, secretPath));
         Document doc = getCollection().find(filter).first();
         return doc != null ? java.util.Optional.of(getMapper().toModel().apply(doc)) : java.util.Optional.empty();
     }
@@ -121,7 +121,7 @@ public class IotDeviceDal extends BaseMongoOperation<IotDevice> {
             mqttDoc.put(FIELD_MQTT_PORT, device.mqttConnectionDetails().port());
             mqttDoc.put(FIELD_MQTT_TOPIC, device.mqttConnectionDetails().topic());
             mqttDoc.put(FIELD_MQTT_USERNAME, device.mqttConnectionDetails().username());
-            mqttDoc.put(FIELD_MQTT_PASSWORD, device.mqttConnectionDetails().password());
+            mqttDoc.put(FIELD_MQTT_SECRET_PATH, device.mqttConnectionDetails().secretPath());
             doc.put(FIELD_MQTT, mqttDoc);
         }
         return doc;

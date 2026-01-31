@@ -45,6 +45,12 @@ public abstract class BaseMongoOperation<T> {
         return getMapper().toModel().apply(doc);
     }
 
+    public T update(T model) {
+        Document doc = getMapper().toDocument().apply(model);
+        getCollection().replaceOne(Filters.eq("_id", doc.get("_id")), doc);
+        return getMapper().toModel().apply(doc);
+    }
+
     public List<T> list() {
         return getCollection().find().map(getMapper().toModel()::apply).into(new ArrayList<>());
     }

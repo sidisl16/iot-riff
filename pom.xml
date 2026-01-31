@@ -120,6 +120,11 @@
     <groupId>io.micronaut.mcp</groupId>
     <artifactId>micronaut-mcp-server-java-sdk</artifactId>
 </dependency>
+    <dependency>
+      <groupId>io.github.jopenlibs</groupId>
+      <artifactId>vault-java-driver</artifactId>
+      <version>6.2.1</version>
+    </dependency>
   </dependencies>
   <build>
     <resources>

@@ -4,6 +4,9 @@ micronaut:
   mcp:
     server:
       transport: HTTP
+      info:
+        name: 'iot-riff-resources'
+        version: '1.0.0'
 endpoints:
   all:
     enabled: true
@@ -14,7 +17,7 @@ mongodb:
 mqtt:
   host: localhost
   port: 1883
-  password: password
+  secretPath: secretPath
 logger:
   levels:
     io.micronaut.http.server: DEBUG
@@ -28,3 +31,6 @@ kafka:
       auto:
         offset:
           reset: latest
+vault:
+  url: "http://localhost:8200"
+  token: "hvs.Yc7GAiOaro08Lm2WGut4eUxn"
