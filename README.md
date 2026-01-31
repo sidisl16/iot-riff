@@ -18,6 +18,7 @@ This platform is specifically engineered to be consumed by AI agents (like Claud
 - **Service Layer**: Fully implemented DAL (Data Access Layer) using MongoDB for persistent storage.
 - **MCP Integration**: Native support for the Model Context Protocol, allowing AI agents to interact with the platform.
 - **MQTT Listener**: Built-in high-performance MQTT broker integration using Netty.
+- **Secret Management**: Integrated with HashiCorp Vault for secure storage and dynamic generation of device credentials.
 
 
 ## 🏗️ Architecture
@@ -27,9 +28,11 @@ This platform is specifically engineered to be consumed by AI agents (like Claud
 ```mermaid
 graph TD
     Device[IoT Device] -- MQTT --> Listener[MQTT Listener]
+    Listener -- Authenticate --> Vault[HashiCorp Vault]
     Listener -- Kafka Producer --> Kafka[Apache Kafka]
     Kafka -- Consumer --> Service[IoT Data Service]
     Service -- DAL --> MongoDB[(MongoDB)]
+    Service -- Provision Secrets --> Vault
     
     Tool[MCP Client/Agent] -- JSON-RPC --> MCP[MCP Tools]
     MCP -- Invokes --> ServiceLayer[Service Layer]
@@ -40,6 +43,7 @@ graph TD
 - **Framework**: Micronaut 4.x (Java 21)
 - **Ingestion**: Apache Kafka
 - **Persistence**: MongoDB
+- **Security**: HashiCorp Vault
 - **Protocol**: MQTT 3.1.1 (Netty-based)
 - **Validation**: NetworkNT JSON Schema Validator
 - **Integration**: Model Context Protocol (MCP)
@@ -52,6 +56,7 @@ graph TD
 - **Maven 3.9+**
 - **MongoDB** (Running on `localhost:27017` by default)
 - **Apache Kafka** (Running on `localhost:9092` by default)
+- **HashiCorp Vault** (Running on `http://localhost:8200` by default)
 
 ### Build & Run
 
@@ -68,6 +73,7 @@ graph TD
 
 3. **Run the application**:
    ```bash
+   export VAULT_TOKEN=<your-vault-token>
    java -jar target/iot-riff-0.1.jar
    ```
 
