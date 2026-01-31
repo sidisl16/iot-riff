@@ -31,7 +31,7 @@ public class IotVaultService {
     private static final String SYS_ENV_VAULT_TOKEN = "VAULT_TOKEN";
     private static final String FIELD_DATA = "data";
     private static final String FIELD_PASSWORD = "password";
-    private static final String SECRET_DATA_PREFIX = "secret/data/";
+    private static final String SECRET_DATA_PREFIX = "secret/";
 
     public IotVaultService(@Property(name = "vault.url") String vaultUrl, ObjectMapper objectMapper) {
         this.vaultUrl = vaultUrl;
@@ -56,11 +56,22 @@ public class IotVaultService {
                     .url(vaultUrl + VAULT_GENERATE_PASSWORD_PATH)
                     .header(HEADER_VAULT_TOKEN, vaultToken)
                     .get();
+            if (getResponse.getStatus() != 200) {
+                String body = new String(getResponse.getBody(), StandardCharsets.UTF_8);
+                log.error("Vault password generation failed. Status: {}, Body: {}", getResponse.getStatus(), body);
+                throw new IotException("Vault password generation failed: " + body);
+            }
             Map<String, Object> response = objectMapper.readValue(
                     new String(getResponse.getBody(), StandardCharsets.UTF_8),
                     Argument.mapOf(String.class, Object.class));
             @SuppressWarnings("unchecked")
             Map<String, Object> data = (Map<String, Object>) response.get(FIELD_DATA);
+
+            if (data == null) {
+                log.error("Vault response missing 'data' field: {}", response);
+                throw new IotException("Vault response missing 'data' field");
+            }
+
             return (String) data.get(FIELD_PASSWORD);
         } catch (Exception e) {
             log.error("Unable to generate secretPath", e);

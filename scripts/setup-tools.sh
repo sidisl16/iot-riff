@@ -47,6 +47,56 @@ fi
 
 start() {
     # ==========================================
+    # MongoDB Setup (Started First for Vault Persistence)
+    # ==========================================
+    echo "----------------------------------------------------------------"
+    echo "Checking MongoDB..."
+
+    if [ ! -d "$MONGO_DIR" ]; then
+        echo "MongoDB directory not found at $MONGO_DIR."
+        TGZ_FILE="$TOOLS_DIR/mongodb-macos-${MONGO_ARCH}-${MONGO_VERSION}.tgz"
+        
+        if [ ! -f "$TGZ_FILE" ]; then
+            echo "Downloading MongoDB $MONGO_VERSION..."
+            curl -o "$TGZ_FILE" "https://fastdl.mongodb.org/osx/mongodb-macos-${MONGO_ARCH}-${MONGO_VERSION}.tgz"
+        fi
+        
+        echo "Extracting MongoDB..."
+        tar -xzf "$TGZ_FILE" -C "$TOOLS_DIR"
+        
+        EXTRACTED_DIR=$(find "$TOOLS_DIR" -maxdepth 1 -type d -name "mongodb-macos-aarch64*${MONGO_VERSION}" | head -n 1)
+        if [ -n "$EXTRACTED_DIR" ]; then
+            MONGO_DIR="$EXTRACTED_DIR"
+            MONGO_BIN="$MONGO_DIR/bin"
+        fi
+    else
+        echo "MongoDB directory found."
+    fi
+
+    if lsof -i :$MONGO_PORT > /dev/null; then
+        echo "MongoDB is already running on port $MONGO_PORT."
+    else
+        echo "Starting MongoDB..."
+        
+        # Create data directory
+        if [ ! -d "$MONGO_DB_PATH" ]; then
+            echo "Creating data directory at $MONGO_DB_PATH..."
+            mkdir -p "$MONGO_DB_PATH"
+        fi
+        
+        # Start mongod (Background)
+        "$MONGO_BIN/mongod" --dbpath "$MONGO_DB_PATH" > "$MONGO_LOG" 2>&1 &
+        
+        sleep 5
+        if lsof -i :$MONGO_PORT > /dev/null; then
+            echo "MongoDB started successfully."
+        else
+            echo "Error starting MongoDB. Check logs in $MONGO_LOG"
+            exit 1
+        fi
+    fi
+
+    # ==========================================
     # HashiCorp Vault Setup
     # ==========================================
     echo "----------------------------------------------------------------"
@@ -69,20 +119,66 @@ start() {
     fi
 
     if ! lsof -i :$VAULT_PORT > /dev/null; then
-        echo "Starting Vault in dev mode..."
-        "$VAULT_BIN" server -dev -dev-root-token-id="$VAULT_TOKEN" > "$TOOLS_DIR/vault.log" 2>&1 &
-        sleep 2
+        echo "Starting Vault..."
+        
+        # Ensure data directory exists for Raft
+        VAULT_DATA_DIR="$TOOLS_DIR/vault-data"
+        if [ ! -d "$VAULT_DATA_DIR" ]; then
+            mkdir -p "$VAULT_DATA_DIR"
+        fi
+        
+        VAULT_CONFIG="$(dirname "${BASH_SOURCE[0]}")/vault-config.hcl"
+        
+        # Start Vault
+        cd "$TOOLS_DIR" && "$VAULT_BIN" server -config="$VAULT_CONFIG" > "$TOOLS_DIR/vault.log" 2>&1 &
+        sleep 5
     else
         echo "Vault is already running on port $VAULT_PORT."
     fi
 
     if lsof -i :$VAULT_PORT > /dev/null; then
         echo "Vault is running."
-        
-        # Enable KV secret path
         export VAULT_ADDR="http://127.0.0.1:$VAULT_PORT"
-        # token is already set in VAULT_TOKEN variable (root)
         
+        # Initialize Vault if needed
+        # We check specific status code or output. grep for "Initialized.*true"
+        if ! "$VAULT_BIN" status | grep -q "Initialized.*true"; then
+             echo "Initializing Vault..."
+             # Initialize with single key for dev simplicity
+             INIT_OUTPUT=$("$VAULT_BIN" operator init -key-shares=1 -key-threshold=1 -format=json)
+             echo "$INIT_OUTPUT" > "$TOOLS_DIR/vault-init.json"
+             echo "Vault initialized. Keys saved to $TOOLS_DIR/vault-init.json"
+        fi
+        
+        # Unseal Vault
+        if "$VAULT_BIN" status | grep -q "Sealed.*true"; then
+             echo "Unsealing Vault..."
+             if [ -f "$TOOLS_DIR/vault-init.json" ]; then
+                 if command -v python3 &>/dev/null; then
+                     UNSEAL_KEY=$(python3 -c "import sys, json; print(json.load(sys.stdin)['unseal_keys_b64'][0])" < "$TOOLS_DIR/vault-init.json")
+                     "$VAULT_BIN" operator unseal "$UNSEAL_KEY"
+                 else
+                     echo "Error: python3 not found. Cannot extract unseal key from JSON."
+                     # Fallback could be added here but Python3 is standard on macOS devs
+                 fi
+             else
+                 echo "Error: Vault is sealed but vault-init.json not found. Cannot auto-unseal."
+             fi
+        fi
+
+        # Get Root Token for Setup
+        if [ -f "$TOOLS_DIR/vault-init.json" ]; then
+            if command -v python3 &>/dev/null; then
+                VAULT_TOKEN=$(python3 -c "import sys, json; print(json.load(sys.stdin)['root_token'])" < "$TOOLS_DIR/vault-init.json")
+                export VAULT_TOKEN
+            else
+                 echo "Error: python3 not found. Cannot extract root token."
+            fi
+        else
+            echo "Warning: Could not retrieve root token. Setup tasks might fail."
+        fi
+
+        # Enable KV secret path
         if ! "$VAULT_BIN" secrets list 2>/dev/null | grep -q "^secret/"; then
             echo "Enabling KV secrets engine at secret/..."
             "$VAULT_BIN" secrets enable -path=secret kv
@@ -147,55 +243,6 @@ start() {
     fi
 
     # ==========================================
-    # MongoDB Setup
-    # ==========================================
-    echo "----------------------------------------------------------------"
-    echo "Checking MongoDB..."
-
-    if [ ! -d "$MONGO_DIR" ]; then
-        echo "MongoDB directory not found at $MONGO_DIR."
-        TGZ_FILE="$TOOLS_DIR/mongodb-macos-${MONGO_ARCH}-${MONGO_VERSION}.tgz"
-        
-        if [ ! -f "$TGZ_FILE" ]; then
-            echo "Downloading MongoDB $MONGO_VERSION..."
-            curl -o "$TGZ_FILE" "https://fastdl.mongodb.org/osx/mongodb-macos-${MONGO_ARCH}-${MONGO_VERSION}.tgz"
-        fi
-        
-        echo "Extracting MongoDB..."
-        tar -xzf "$TGZ_FILE" -C "$TOOLS_DIR"
-        
-        EXTRACTED_DIR=$(find "$TOOLS_DIR" -maxdepth 1 -type d -name "mongodb-macos-aarch64*${MONGO_VERSION}" | head -n 1)
-        if [ -n "$EXTRACTED_DIR" ]; then
-            MONGO_DIR="$EXTRACTED_DIR"
-            MONGO_BIN="$MONGO_DIR/bin"
-        fi
-    else
-        echo "MongoDB directory found."
-    fi
-
-    if lsof -i :$MONGO_PORT > /dev/null; then
-        echo "MongoDB is already running on port $MONGO_PORT."
-    else
-        echo "Starting MongoDB..."
-        
-        # Create data directory
-        if [ ! -d "$MONGO_DB_PATH" ]; then
-            echo "Creating data directory at $MONGO_DB_PATH..."
-            mkdir -p "$MONGO_DB_PATH"
-        fi
-        
-        # Start mongod (Background)
-        "$MONGO_BIN/mongod" --dbpath "$MONGO_DB_PATH" > "$MONGO_LOG" 2>&1 &
-        
-        sleep 5
-        if lsof -i :$MONGO_PORT > /dev/null; then
-            echo "MongoDB started successfully."
-        else
-            echo "Error starting MongoDB. Check logs in $MONGO_LOG"
-        fi
-    fi
-
-    # ==========================================
     # Summary & Shell Persistence
     # ==========================================
     echo "----------------------------------------------------------------"
@@ -221,13 +268,23 @@ export PATH=\"\$PATH:$MONGO_BIN:$VAULT_DIR\""
     fi
 
     # Append to Shell Config if valid and not already present
+    # Append to Shell Config if valid and not already present
     if [ -n "$SHELL_RC" ] && [ -f "$SHELL_RC" ]; then
         if ! grep -q "IoT-Riff Dev Tools" "$SHELL_RC"; then
             echo "" >> "$SHELL_RC"
             echo "$EXPORTS_BLOCK" >> "$SHELL_RC"
             echo "Added configuration to $SHELL_RC"
         else
-            echo "Configuration already present in $SHELL_RC"
+            echo "Configuration block found in $SHELL_RC"
+            # Update VAULT_TOKEN if it differs
+            # We use sed to replace the specific line.
+            # MacOS sed requires -i '' for in-place without backup
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+                 sed -i '' "s|^export VAULT_TOKEN=.*|export VAULT_TOKEN=$VAULT_TOKEN|" "$SHELL_RC"
+            else
+                 sed -i "s|^export VAULT_TOKEN=.*|export VAULT_TOKEN=$VAULT_TOKEN|" "$SHELL_RC"
+            fi
+            echo "Updated VAULT_TOKEN in $SHELL_RC"
         fi
         echo ""
         echo "Run 'source $SHELL_RC' to update your current shell."

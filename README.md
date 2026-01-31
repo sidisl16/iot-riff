@@ -106,6 +106,37 @@ The project includes a `run.sh` script that automates the entire setup process, 
 
    > **Note**: Press `Ctrl+C` to gracefully shut down the application and all background services.
 
+### 🔐 Vault & Credentials
+
+To manually retrieve credentials for a device (e.g., to connect an MQTT client):
+
+1. **Open a new terminal**:
+    Since the application is running in the current terminal, open a new one and ensure the environment is loaded:
+    ```bash
+    source ~/.zshrc
+    ```
+
+2. **Login to Vault**:
+   ```bash
+   vault login $VAULT_TOKEN
+   ```
+
+2. **Fetch Device Secret**:
+   Each device's MQTT password is stored securely in Vault.
+   ```bash
+   vault kv get secret/data/<device_id>
+   ```
+
+   **Output Example**:
+   ```text
+   ==== Data ====
+   Key     Value
+   ---     -----
+   data    map[password:<mqtt_password>]
+   ```
+   
+   Use the <mqtt_password> from the output to authenticate your MQTT client.
+
 ## 🤖 MCP Tools
 
 IoT-Riff exposes several tools for AI agents via MCP:

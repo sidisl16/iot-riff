@@ -41,7 +41,18 @@ else
 fi
 
 # Set Environment Variables
-export VAULT_TOKEN="${VAULT_TOKEN:-root}"
+# Load Vault Token
+if [ -f "vault-init.json" ]; then
+    echo "Loading Vault Token from vault-init.json..."
+    export VAULT_TOKEN=$(python3 -c "import sys, json; print(json.load(open('vault-init.json'))['root_token'])")
+elif [ -f "scripts/vault-init.json" ]; then
+     echo "Loading Vault Token from scripts/vault-init.json..."
+     export VAULT_TOKEN=$(python3 -c "import sys, json; print(json.load(open('scripts/vault-init.json'))['root_token'])")
+else
+     echo "Warning: vault-init.json not found. Defaulting to 'root' token (may fail)."
+     export VAULT_TOKEN="${VAULT_TOKEN:-root}"
+fi
+
 export VAULT_ADDR='http://127.0.0.1:8200'
 
 # Build
@@ -61,6 +72,16 @@ echo ""
 echo "=========================================="
 echo "Starting Application..."
 echo "=========================================="
+
+# Ensure port 8080 is free
+APP_PORT=8080
+if lsof -i :$APP_PORT > /dev/null; then
+    echo "Port $APP_PORT is in use. Killing blocking process..."
+    lsof -t -i :$APP_PORT | xargs kill -9
+    sleep 2
+    echo "Port $APP_PORT cleared."
+fi
+
 java -jar "$PROJECT_DIR/target/iot-riff-0.1.jar" &
 APP_PID=$!
 

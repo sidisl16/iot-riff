@@ -24,3 +24,5 @@ mongodb-data/
 mongo.log
 *.zip
 *.tgz
+vault-init.json
+vault-data/
