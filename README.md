@@ -110,11 +110,7 @@ The project includes a `run.sh` script that automates the entire setup process, 
 
 To manually retrieve credentials for a device (e.g., to connect an MQTT client):
 
-1. **Open a new terminal**:
-    Since the application is running in the current terminal, open a new one and ensure the environment is loaded:
-    ```bash
-    source ~/.zshrc
-    ```
+1. **Open a new terminal**
 
 2. **Login to Vault**:
    ```bash
