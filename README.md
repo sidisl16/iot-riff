@@ -60,10 +60,13 @@ graph TB
     MCPTools -- "Invoke" --> ServiceLayer
 
     %% Styling
-    style Edge fill:#f9f,stroke:#333,stroke-width:2px
-    style Interface fill:#bbf,stroke:#333,stroke-width:2px
-    style Ingestion fill:#dfd,stroke:#333,stroke-width:2px
-    style Backend fill:#ffd,stroke:#333,stroke-width:2px
+    style Edge fill:#f8fafc,stroke:#475569,stroke-width:2px,color:#1e293b
+    style Interface fill:#f1f5f9,stroke:#475569,stroke-width:2px,color:#1e293b
+    style Ingestion fill:#f0fdf4,stroke:#166534,stroke-width:2px,color:#14532d
+    style Backend fill:#fffbeb,stroke:#92400e,stroke-width:2px,color:#78350f
+
+    %% Subgraph Styling
+    classDef default stroke:#334155,stroke-width:1px;
 ```
 
 ## 🛠️ Tech Stack
