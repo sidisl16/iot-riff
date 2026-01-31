@@ -33,4 +33,3 @@ kafka:
           reset: latest
 vault:
   url: "http://localhost:8200"
-  token: "hvs.Yc7GAiOaro08Lm2WGut4eUxn"

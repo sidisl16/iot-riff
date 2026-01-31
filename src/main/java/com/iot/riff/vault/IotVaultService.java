@@ -28,14 +28,14 @@ public class IotVaultService {
 
     private static final String VAULT_GENERATE_PASSWORD_PATH = "/v1/sys/policies/password/iot-policy/generate";
     private static final String HEADER_VAULT_TOKEN = "X-Vault-Token";
+    private static final String SYS_ENV_VAULT_TOKEN = "VAULT_TOKEN";
     private static final String FIELD_DATA = "data";
     private static final String FIELD_PASSWORD = "password";
     private static final String SECRET_DATA_PREFIX = "secret/data/";
 
-    public IotVaultService(@Property(name = "vault.url") String vaultUrl,
-            @Property(name = "vault.token") String vaultToken, ObjectMapper objectMapper) {
+    public IotVaultService(@Property(name = "vault.url") String vaultUrl, ObjectMapper objectMapper) {
         this.vaultUrl = vaultUrl;
-        this.vaultToken = vaultToken;
+        this.vaultToken = System.getenv(SYS_ENV_VAULT_TOKEN);
         this.objectMapper = objectMapper;
     }
 
