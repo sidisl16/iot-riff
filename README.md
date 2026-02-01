@@ -23,7 +23,7 @@ This platform is specifically engineered to be consumed by AI agents (like Claud
 
 ## 🏗️ Architecture
 
-![IoT Workflow](iot_workflow.gif)
+![IoT Workflow](iot_flow.gif)
 
 ```mermaid
 graph TB
