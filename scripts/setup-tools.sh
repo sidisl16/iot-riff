@@ -229,7 +229,7 @@ start() {
         if [ ! -f "$KAFKA_LOG_DIR/meta.properties" ]; then
             echo "Formatting Kafka storage..."
             CLUSTER_ID=$($KAFKA_BIN/kafka-storage.sh random-uuid)
-            $KAFKA_BIN/kafka-storage.sh format -t $CLUSTER_ID -c $KAFKA_DIR/config/server.properties
+            $KAFKA_BIN/kafka-storage.sh format --standalone -t $CLUSTER_ID -c $KAFKA_DIR/config/server.properties
         fi
         
         "$KAFKA_BIN/kafka-server-start.sh" -daemon "$KAFKA_DIR/config/server.properties"
